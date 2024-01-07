@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Meet Light Sync",
-  "version": "1.0",
+  "version": "1.1.0",
   "description": "Turn on/off your Elgato Key Light Air when you join/leave a Google Meet call.",
   "permissions": [
     "storage"

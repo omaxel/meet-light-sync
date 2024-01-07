@@ -1,6 +1,8 @@
 chrome.runtime.onInstalled.addListener(function (details) {
-    if (details.reason === "install") {
+    if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
         chrome.runtime.openOptionsPage()
+    } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
+        chrome.runtime.openOptionsPage();
     }
 });
 
@@ -18,25 +20,56 @@ chrome.tabs.onRemoved.addListener(async () => {
     }
 });
 
+/**
+ * It will update the status of all the key lights stored in settings.
+ * @param turnOn {boolean} If true, it will turn on all the key lights. If false, it will turn them off.
+ * @returns {Promise<void>} It will return a promise that will be resolved when all the key lights have been updated.
+ */
 async function updateKeyLightSettings(turnOn) {
-    const {keyLightAir} = await chrome.storage.sync.get(['keyLightAir']);
+    const {keyLightAirList} = await chrome.storage.sync.get(['keyLightAirList']);
 
-    if (!keyLightAir || !keyLightAir.ipAddress || !keyLightAir.port) {
+    if (!keyLightAirList || keyLightAirList.length === 0) {
         return;
     }
 
-    await setKeyLightAirStatus(keyLightAir, turnOn);
+    for (const keyLightAir of keyLightAirList) {
+        if (!keyLightAir.ipAddress || !keyLightAir.port) {
+            continue;
+        }
+
+        try {
+            await setKeyLightAirStatus(keyLightAir, turnOn);
+        } catch (e) { // In case some of the key lights are not available, we don't want to fail the update of others
+            console.error(e);
+        }
+    }
 }
 
+/**
+ * It will return the URL of the key light.
+ * @param keyLightAir {{ipAddress: string, port: string}} The key light.
+ * @returns {string} The URL of the key light.
+ */
 function getKeyLightAirUrl(keyLightAir) {
     return `http://${keyLightAir.ipAddress}:${keyLightAir.port}/elgato/lights`;
 }
 
+/**
+ * It will return the status of the key light.
+ * @param keyLightAir {{ipAddress: string, port: string}} The key light.
+ * @returns {Promise<any>} It will return a promise that will be resolved with the status of the key light.
+ */
 function getKeyLightAirStatus(keyLightAir) {
     const url = getKeyLightAirUrl(keyLightAir);
     return fetch(url).then(response => response.json());
 }
 
+/**
+ * It will set the status of the key light.
+ * @param keyLightAir {{ipAddress: string, port: string}} The key light.
+ * @param turnOn {boolean} If true, it will turn on the key light. If false, it will turn it off.
+ * @returns {Promise<any>} It will return a promise that will be resolved with the updated status of the key light.
+ */
 async function setKeyLightAirStatus(keyLightAir, turnOn) {
     const url = getKeyLightAirUrl(keyLightAir);
 
