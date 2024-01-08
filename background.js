@@ -1,7 +1,7 @@
 chrome.runtime.onInstalled.addListener(function (details) {
     if (details.reason === chrome.runtime.OnInstalledReason.INSTALL) {
         chrome.runtime.openOptionsPage()
-    } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE) {
+    } else if (details.reason === chrome.runtime.OnInstalledReason.UPDATE && details.previousVersion === "1.0") {
         chrome.runtime.openOptionsPage();
     }
 });
